@@ -11,6 +11,11 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 #include <string.h>
+
+#include "imgui.h"
+#include "examples/imgui_impl_glfw.h"
+#include "examples/imgui_impl_opengl2.h"
+
 #define GLFW_INCLUDE_GLU
 #include "GLFW/glfw3.h"
 
@@ -36,46 +41,29 @@ namespace
 
 	int demoIndex = 0;
 
-	int width = 800;
-	int height = 800;
+	int width = 1280;
+	int height = 720;
 
 	World world(gravity, iterations);
 }
 
-void DrawText(int x, int y, char *string)
+static void glfwErrorCallback(int error, const char* description)
 {
-	if (x != 12345)
-	{
-		return;
-	}
-
-	int len, i;
-
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
-	int w, h;
-	glfwGetWindowSize(mainWindow, &w, &h);
-	gluOrtho2D(0, w, h, 0);
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-
-	glColor3f(0.9f, 0.6f, 0.6f);
-	glRasterPos2i(x, y);
-	len = (int) strlen(string);
-	for (i = 0; i < len; i++)
-	{
-		//glutBitmapCharacter(GLUT_BITMAP_9_BY_15, string[i]);
-	}
-
-	glPopMatrix();
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-	glMatrixMode(GL_MODELVIEW);
+	printf("GLFW error %d: %s\n", error, description);
 }
 
-void DrawBody(Body* body)
+static void DrawText(int x, int y, char *string)
+{
+	ImVec2 p;
+	p.x = float(x);
+	p.y = float(y);
+	ImGui::Begin("Overlay", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
+	ImGui::SetCursorPos(p);
+	ImGui::TextColored(ImColor(230, 153, 153, 255), string);
+	ImGui::End();
+}
+
+static void DrawBody(Body* body)
 {
 	Mat22 R(body->rotation);
 	Vec2 x = body->position;
@@ -99,7 +87,7 @@ void DrawBody(Body* body)
 	glEnd();
 }
 
-void DrawJoint(Joint* joint)
+static void DrawJoint(Joint* joint)
 {
 	Body* b1 = joint->body1;
 	Body* b2 = joint->body2;
@@ -122,7 +110,7 @@ void DrawJoint(Joint* joint)
 	glEnd();
 }
 
-void LaunchBomb()
+static void LaunchBomb()
 {
 	if (!bomb)
 	{
@@ -140,7 +128,7 @@ void LaunchBomb()
 }
 
 // Single box
-void Demo1(Body* b, Joint* j)
+static void Demo1(Body* b, Joint* j)
 {
 	b->Set(Vec2(100.0f, 20.0f), FLT_MAX);
 	b->position.Set(0.0f, -0.5f * b->width.y);
@@ -154,7 +142,7 @@ void Demo1(Body* b, Joint* j)
 }
 
 // A simple pendulum
-void Demo2(Body* b, Joint* j)
+static void Demo2(Body* b, Joint* j)
 {
 	Body* b1 = b + 0;
 	b1->Set(Vec2(100.0f, 20.0f), FLT_MAX);
@@ -179,7 +167,7 @@ void Demo2(Body* b, Joint* j)
 }
 
 // Varying friction coefficients
-void Demo3(Body* b, Joint* j)
+static void Demo3(Body* b, Joint* j)
 {
 	b->Set(Vec2(100.0f, 20.0f), FLT_MAX);
 	b->position.Set(0.0f, -0.5f * b->width.y);
@@ -226,7 +214,7 @@ void Demo3(Body* b, Joint* j)
 }
 
 // A vertical stack
-void Demo4(Body* b, Joint* j)
+static void Demo4(Body* b, Joint* j)
 {
 	b->Set(Vec2(100.0f, 20.0f), FLT_MAX);
 	b->friction = 0.2f;
@@ -247,7 +235,7 @@ void Demo4(Body* b, Joint* j)
 }
 
 // A pyramid
-void Demo5(Body* b, Joint* j)
+static void Demo5(Body* b, Joint* j)
 {
 	b->Set(Vec2(100.0f, 20.0f), FLT_MAX);
 	b->friction = 0.2f;
@@ -280,7 +268,7 @@ void Demo5(Body* b, Joint* j)
 }
 
 // A teeter
-void Demo6(Body* b, Joint* j)
+static void Demo6(Body* b, Joint* j)
 {
 	Body* b1 = b + 0;
 	b1->Set(Vec2(100.0f, 20.0f), FLT_MAX);
@@ -316,7 +304,7 @@ void Demo6(Body* b, Joint* j)
 }
 
 // A suspension bridge
-void Demo7(Body* b, Joint* j)
+static void Demo7(Body* b, Joint* j)
 {
 	b->Set(Vec2(100.0f, 20.0f), FLT_MAX);
 	b->friction = 0.2f;
@@ -372,7 +360,7 @@ void Demo7(Body* b, Joint* j)
 }
 
 // Dominos
-void Demo8(Body* b, Joint* j)
+static void Demo8(Body* b, Joint* j)
 {
 	Body* b1 = b;
 	b->Set(Vec2(100.0f, 20.0f), FLT_MAX);
@@ -449,7 +437,7 @@ void Demo8(Body* b, Joint* j)
 }
 
 // A multi-pendulum
-void Demo9(Body* b, Joint* j)
+static void Demo9(Body* b, Joint* j)
 {
 	b->Set(Vec2(100.0f, 20.0f), FLT_MAX);
 	b->friction = 0.2f;
@@ -516,7 +504,7 @@ char* demoStrings[] = {
 	"Demo 8: Dominos",
 	"Demo 9: Multi-pendulum"};
 
-void InitDemo(int index)
+static void InitDemo(int index)
 {
 	world.Clear();
 	numBodies = 0;
@@ -571,7 +559,7 @@ static void Keyboard(GLFWwindow* window, int key, int scancode, int action, int 
 	}
 }
 
-void Reshape(GLFWwindow*, int w, int h)
+static void Reshape(GLFWwindow*, int w, int h)
 {
 	width = w;
 	height = h > 0 ? h : 1;
@@ -582,9 +570,9 @@ void Reshape(GLFWwindow*, int w, int h)
 	gluPerspective(45.0, (float)width/(float)height, 0.1, 100.0);
 }
 
-int main(int argc, char** argv)
+int main(int, char**)
 {
-	InitDemo(0);
+	glfwSetErrorCallback(glfwErrorCallback);
 
 	if (glfwInit() == 0)
 	{
@@ -601,18 +589,33 @@ int main(int argc, char** argv)
 	}
 
 	glfwMakeContextCurrent(mainWindow);
+	glfwSwapInterval(1);
 	glfwSetWindowSizeCallback(mainWindow, Reshape);
 	glfwSetKeyCallback(mainWindow, Keyboard);
-	glfwSwapInterval(1);
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGui::StyleColorsClassic();
+	ImGui_ImplGlfw_InitForOpenGL(mainWindow, true);
+	ImGui_ImplOpenGL2_Init();
 
 	glViewport(0, 0, width, height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
+	
+	// TODO_ERIN glOrtho
 	gluPerspective(45.0, (float)width / (float)height, 0.1, 100.0);
+
+	InitDemo(0);
 
 	while (!glfwWindowShouldClose(mainWindow))
 	{
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glfwPollEvents();
+
+		ImGui_ImplOpenGL2_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
 
 		DrawText(5, 15, demoStrings[demoIndex]);
 		DrawText(5, 45, "Keys: 1-9 Demos, Space to Launch the Bomb");
@@ -639,8 +642,9 @@ int main(int argc, char** argv)
 		for (int i = 0; i < numJoints; ++i)
 			DrawJoint(joints + i);
 
+		ImGui::Render();
+		ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
 		glfwSwapBuffers(mainWindow);
-		glfwPollEvents();
 	}
 
 	glfwTerminate();

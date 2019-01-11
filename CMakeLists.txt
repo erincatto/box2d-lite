@@ -20,7 +20,14 @@ find_package(OpenGL REQUIRED)
 add_library(box2d-lite STATIC ${SOURCE_FILES} ${INCLUDE_FILES})
 target_include_directories(box2d-lite PUBLIC external/glfw/include include/box2d-lite ${OPENGL_INCLUDE_DIR})
 
-add_subdirectory(external/glfw)
-add_executable(samples samples/main.cpp)
-# target_include_directories(samples PUBLIC external/glfw/include ${OPENGL_INCLUDE_DIR})
+set(imgui_SOURCES
+	extern/imgui/imgui.cpp
+	extern/imgui/imgui_draw.cpp
+	extern/imgui/imgui_widgets.cpp
+	extern/imgui/examples/imgui_impl_glfw.cpp
+	extern/imgui/examples/imgui_impl_opengl2.cpp)
+
+add_subdirectory(extern/glfw)
+add_executable(samples samples/main.cpp ${imgui_SOURCES})
+target_include_directories(samples PUBLIC extern/imgui)
 target_link_libraries(samples PUBLIC box2d-lite glfw ${GLFW_LIBRARIES} ${OPENGL_LIBRARIES} ${OPENGL_glu_LIBRARY})
