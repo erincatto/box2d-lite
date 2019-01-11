@@ -9,8 +9,10 @@
 * It is provided "as is" without express or implied warranty.
 */
 
+#define _CRT_SECURE_NO_WARNINGS
 #include <string.h>
-#include "glut.h"
+#define GLFW_INCLUDE_GLU
+#include "GLFW/glfw3.h"
 
 #include "World.h"
 #include "Body.h"
@@ -18,6 +20,8 @@
 
 namespace
 {
+	GLFWwindow* mainWindow = NULL;
+
 	Body bodies[200];
 	Joint joints[100];
 	
@@ -32,18 +36,26 @@ namespace
 
 	int demoIndex = 0;
 
+	int width = 800;
+	int height = 800;
+
 	World world(gravity, iterations);
 }
 
 void DrawText(int x, int y, char *string)
 {
+	if (x != 12345)
+	{
+		return;
+	}
+
 	int len, i;
 
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
-	int w = glutGet(GLUT_WINDOW_WIDTH);
-	int h = glutGet(GLUT_WINDOW_HEIGHT);
+	int w, h;
+	glfwGetWindowSize(mainWindow, &w, &h);
 	gluOrtho2D(0, w, h, 0);
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -53,7 +65,9 @@ void DrawText(int x, int y, char *string)
 	glRasterPos2i(x, y);
 	len = (int) strlen(string);
 	for (i = 0; i < len; i++)
-		glutBitmapCharacter(GLUT_BITMAP_9_BY_15, string[i]);
+	{
+		//glutBitmapCharacter(GLUT_BITMAP_9_BY_15, string[i]);
+	}
 
 	glPopMatrix();
 	glMatrixMode(GL_PROJECTION);
@@ -477,7 +491,7 @@ void Demo9(Body* b, Joint* j)
 		b->rotation = 0.0f;
 		world.Add(b);
 
-		j->Set(b1, b, Vec2(i, y));
+		j->Set(b1, b, Vec2(float(i), y));
 		j->softness = softness;
 		j->biasFactor = biasFactor;
 		world.Add(j);
@@ -513,44 +527,18 @@ void InitDemo(int index)
 	demos[index](bodies, joints);
 }
 
-void SimulationLoop()
+static void Keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	if (action != GLFW_PRESS)
+	{
+		return;
+	}
 
-	DrawText(5, 15, demoStrings[demoIndex]);
-	DrawText(5, 45, "Keys: 1-9 Demos, Space to Launch the Bomb");
-
-	char buffer[64];
-	sprintf(buffer, "(A)ccumulation %s", World::accumulateImpulses ? "ON" : "OFF");
-	DrawText(5, 75, buffer);
-
-	sprintf(buffer, "(P)osition Correction %s", World::positionCorrection ? "ON" : "OFF");
-	DrawText(5, 105, buffer);
-
-	sprintf(buffer, "(W)arm Starting %s", World::warmStarting ? "ON" : "OFF");
-	DrawText(5, 135, buffer);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glTranslatef(0.0f, -7.0f, -25.0f);
-
-	world.Step(timeStep);
-
-	for (int i = 0; i < numBodies; ++i)
-		DrawBody(bodies + i);
-
-	for (int i = 0; i < numJoints; ++i)
-		DrawJoint(joints + i);
-
-	glutSwapBuffers();
-}
-
-void Keyboard(unsigned char key, int x, int y)
-{
 	switch (key)
 	{
-	case 27:
-		exit(0);
+	case GLFW_KEY_ESCAPE:
+		// Quit
+		glfwSetWindowShouldClose(mainWindow, GL_TRUE);
 		break;
 
 	case '1':
@@ -562,31 +550,31 @@ void Keyboard(unsigned char key, int x, int y)
 	case '7':
 	case '8':
 	case '9':
-		InitDemo(key - '1');
+		InitDemo(key - GLFW_KEY_1);
 		break;
 
-	case 'a':
+	case GLFW_KEY_A:
 		World::accumulateImpulses = !World::accumulateImpulses;
 		break;
 
-	case 'p':
+	case GLFW_KEY_P:
 		World::positionCorrection = !World::positionCorrection;
 		break;
 
-	case 'w':
+	case GLFW_KEY_W:
 		World::warmStarting = !World::warmStarting;
 		break;
 
-	case ' ':
+	case GLFW_KEY_SPACE:
 		LaunchBomb();
 		break;
 	}
 }
 
-void Reshape(int width, int height)
+void Reshape(GLFWwindow*, int w, int h)
 {
-	if (height == 0)
-		height = 1;
+	width = w;
+	height = h > 0 ? h : 1;
 
 	glViewport(0, 0, width, height);
 	glMatrixMode(GL_PROJECTION);
@@ -598,17 +586,63 @@ int main(int argc, char** argv)
 {
 	InitDemo(0);
 
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutInitWindowSize(800, 800);
-	glutCreateWindow("Box2D");
+	if (glfwInit() == 0)
+	{
+		fprintf(stderr, "Failed to initialize GLFW\n");
+		return -1;
+	}
 
-	glutReshapeFunc(Reshape);
-	glutDisplayFunc(SimulationLoop);
-	glutKeyboardFunc(Keyboard);
-	glutIdleFunc(SimulationLoop);
+	mainWindow = glfwCreateWindow(width, height, "box2d-lite", NULL, NULL);
+	if (mainWindow == NULL)
+	{
+		fprintf(stderr, "Failed to open GLFW mainWindow.\n");
+		glfwTerminate();
+		return -1;
+	}
 
-	glutMainLoop();
+	glfwMakeContextCurrent(mainWindow);
+	glfwSetWindowSizeCallback(mainWindow, Reshape);
+	glfwSetKeyCallback(mainWindow, Keyboard);
+	glfwSwapInterval(1);
 
+	glViewport(0, 0, width, height);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(45.0, (float)width / (float)height, 0.1, 100.0);
+
+	while (!glfwWindowShouldClose(mainWindow))
+	{
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		DrawText(5, 15, demoStrings[demoIndex]);
+		DrawText(5, 45, "Keys: 1-9 Demos, Space to Launch the Bomb");
+
+		char buffer[64];
+		sprintf(buffer, "(A)ccumulation %s", World::accumulateImpulses ? "ON" : "OFF");
+		DrawText(5, 75, buffer);
+
+		sprintf(buffer, "(P)osition Correction %s", World::positionCorrection ? "ON" : "OFF");
+		DrawText(5, 105, buffer);
+
+		sprintf(buffer, "(W)arm Starting %s", World::warmStarting ? "ON" : "OFF");
+		DrawText(5, 135, buffer);
+
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glTranslatef(0.0f, -7.0f, -25.0f);
+
+		world.Step(timeStep);
+
+		for (int i = 0; i < numBodies; ++i)
+			DrawBody(bodies + i);
+
+		for (int i = 0; i < numJoints; ++i)
+			DrawJoint(joints + i);
+
+		glfwSwapBuffers(mainWindow);
+		glfwPollEvents();
+	}
+
+	glfwTerminate();
 	return 0;
 }

@@ -15,10 +15,12 @@ set(HEADER_FILES
 	include/box2d-lite/MathUtils.h
 	include/box2d-lite/World.h)
 
-add_library(box2d-lite STATIC ${SOURCE_FILES} ${INCLUDE_FILES})
-target_include_directories(box2d-lite PUBLIC include/box2d-lite ext/glut ${OPENGL_INCLUDE_DIR})
-
 find_package(OpenGL REQUIRED)
+
+add_library(box2d-lite STATIC ${SOURCE_FILES} ${INCLUDE_FILES})
+target_include_directories(box2d-lite PUBLIC external/glfw/include include/box2d-lite ${OPENGL_INCLUDE_DIR})
+
+add_subdirectory(external/glfw)
 add_executable(samples samples/main.cpp)
-target_link_libraries(samples PUBLIC box2d-lite ${CMAKE_CURRENT_SOURCE_DIR}/ext/glut/glut32.lib ${OPENGL_LIBRARIES})
-target_include_directories(samples PUBLIC ext/glut ${OPENGL_INCLUDE_DIR})
+# target_include_directories(samples PUBLIC external/glfw/include ${OPENGL_INCLUDE_DIR})
+target_link_libraries(samples PUBLIC box2d-lite glfw ${GLFW_LIBRARIES} ${OPENGL_LIBRARIES} ${OPENGL_glu_LIBRARY})

@@ -13,7 +13,8 @@
 #include "Body.h"
 #include "World.h"
 
-#include "glut.h"
+#define GLFW_INCLUDE_GLU
+#include "GLFW/glfw3.h"
 
 Arbiter::Arbiter(Body* b1, Body* b2)
 {
