@@ -9,9 +9,9 @@
 * It is provided "as is" without express or implied warranty.
 */
 
-#include "Arbiter.h"
-#include "Body.h"
-#include "World.h"
+#include "box2d-lite/Arbiter.h"
+#include "box2d-lite/Body.h"
+#include "box2d-lite/World.h"
 
 Arbiter::Arbiter(Body* b1, Body* b2)
 {

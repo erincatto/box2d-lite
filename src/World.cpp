@@ -9,9 +9,9 @@
 * It is provided "as is" without express or implied warranty.
 */
 
-#include "World.h"
-#include "Body.h"
-#include "Joint.h"
+#include "box2d-lite/World.h"
+#include "box2d-lite/Body.h"
+#include "box2d-lite/Joint.h"
 
 using std::vector;
 using std::map;

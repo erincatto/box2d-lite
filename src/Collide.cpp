@@ -9,8 +9,8 @@
 * It is provided "as is" without express or implied warranty.
 */
 
-#include "Arbiter.h"
-#include "Body.h"
+#include "box2d-lite/Arbiter.h"
+#include "box2d-lite/Body.h"
 
 // Box vertex and edge numbering:
 //

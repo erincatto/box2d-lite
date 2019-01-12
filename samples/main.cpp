@@ -19,9 +19,9 @@
 #define GLFW_INCLUDE_GLU
 #include "GLFW/glfw3.h"
 
-#include "World.h"
-#include "Body.h"
-#include "Joint.h"
+#include "box2d-lite/World.h"
+#include "box2d-lite/Body.h"
+#include "box2d-lite/Joint.h"
 
 namespace
 {

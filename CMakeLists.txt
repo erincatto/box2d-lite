@@ -1,50 +1,57 @@
 cmake_minimum_required(VERSION 3.8)
+
 project(box2d-lite LANGUAGES CXX)
 
-set(SOURCE_FILES
-	src/Arbiter.cpp
-	src/Body.cpp
-	src/Collide.cpp
-	src/Joint.cpp
-	src/World.cpp)
-
-set(HEADER_FILES
-	include/box2d-lite/Arbiter.h
-	include/box2d-lite/Body.h
-	include/box2d-lite/Joint.h
-	include/box2d-lite/MathUtils.h
-	include/box2d-lite/World.h)
-
-add_library(box2d-lite STATIC ${SOURCE_FILES} ${INCLUDE_FILES})
-target_include_directories(box2d-lite PUBLIC include/box2d-lite)
+add_subdirectory(src)
 
 option(BOX2D_BUILD_SAMPLES "Build the box2d-lite sample program" ON)
 
 if (BOX2D_BUILD_SAMPLES)
-find_package(OpenGL REQUIRED)
 
-set(imgui_SOURCES
-	extern/imgui/imgui.cpp
-	extern/imgui/imgui_draw.cpp
-	extern/imgui/imgui_widgets.cpp
-	extern/imgui/examples/imgui_impl_glfw.cpp
-	extern/imgui/examples/imgui_impl_opengl2.cpp)
+	find_package(OpenGL REQUIRED)
 
-option(BUILD_SHARED_LIBS "" OFF)
-option(GLFW_BUILD_EXAMPLES "" OFF)
-option(GLFW_BUILD_TESTS "" OFF)
-option(GLFW_BUILD_DOCS "" OFF)
-option(GLFW_INSTALL "" OFF)
-option(GLFW_VULKAN_STATIC "" OFF)
-if (MSVC)
-    option(USE_MSVC_RUNTIME_LIBRARY_DLL "" OFF)
-endif()
+	# GLFW
+	option(BUILD_SHARED_LIBS "" OFF)
+	option(GLFW_BUILD_EXAMPLES "" OFF)
+	option(GLFW_BUILD_TESTS "" OFF)
+	option(GLFW_BUILD_DOCS "" OFF)
+	option(GLFW_INSTALL "" OFF)
+	option(GLFW_VULKAN_STATIC "" OFF)
+	if (MSVC)
+	    option(USE_MSVC_RUNTIME_LIBRARY_DLL "" OFF)
+	endif()
 
-add_subdirectory(extern/glfw)
+	add_subdirectory(extern/glfw)
 
-add_executable(samples samples/main.cpp ${imgui_SOURCES})
-target_include_directories(samples PUBLIC extern/imgui ${OPENGL_INCLUDE_DIR})
-target_link_libraries(samples PUBLIC box2d-lite glfw ${OPENGL_LIBRARIES} ${OPENGL_glu_LIBRARY})
+	# dear imgui
+	set(IMGUI_SOURCE_FILES
+		extern/imgui/imgui.cpp
+		extern/imgui/imgui_draw.cpp
+		extern/imgui/imgui_widgets.cpp
+		extern/imgui/examples/imgui_impl_glfw.cpp
+		extern/imgui/examples/imgui_impl_opengl2.cpp)
 
-set(VS_STARTUP_PROJECT samples)
+	set(IMGUI_HEADER_FILES
+		extern/imgui/imconfig.h
+		extern/imgui/imgui.h
+		extern/imgui/imgui_internal.h
+		extern/imgui/imstb_rectpack.h
+		extern/imgui/imstb_textedit.h
+		extern/imgui/imstb_truetype.h
+		extern/imgui/examples/imgui_impl_glfw.h
+		extern/imgui/examples/imgui_impl_opengl2.h)
+
+	add_library(imgui STATIC ${IMGUI_SOURCE_FILES} ${IMGUI_HEADER_FILES})
+	target_include_directories(imgui PUBLIC extern/imgui ${OPENGL_INCLUDE_DIR})
+
+	# box2d-lite samples
+	add_executable(samples samples/main.cpp)
+	target_include_directories(samples PUBLIC imgui ${OPENGL_INCLUDE_DIR})
+	target_link_libraries(samples PUBLIC box2d-lite glfw imgui ${OPENGL_LIBRARIES} ${OPENGL_glu_LIBRARY})
+
+	# default startup project for Visual Studio
+	if (MSVC)
+		set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT samples)
+	endif()
+
 endif()

@@ -9,9 +9,9 @@
 * It is provided "as is" without express or implied warranty.
 */
 
-#include "Joint.h"
-#include "Body.h"
-#include "World.h"
+#include "box2d-lite/Joint.h"
+#include "box2d-lite/Body.h"
+#include "box2d-lite/World.h"
 
 void Joint::Set(Body* b1, Body* b2, const Vec2& anchor)
 {
