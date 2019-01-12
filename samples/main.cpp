@@ -593,11 +593,17 @@ int main(int, char**)
 	glfwSetWindowSizeCallback(mainWindow, Reshape);
 	glfwSetKeyCallback(mainWindow, Keyboard);
 
+	float xscale, yscale;
+	glfwGetWindowContentScale(mainWindow, &xscale, &yscale);
+	float uiScale = xscale;
+
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGui::StyleColorsClassic();
 	ImGui_ImplGlfw_InitForOpenGL(mainWindow, true);
 	ImGui_ImplOpenGL2_Init();
+	ImGuiIO& io = ImGui::GetIO();
+	io.FontGlobalScale = uiScale;
 
 	glViewport(0, 0, width, height);
 	glMatrixMode(GL_PROJECTION);
@@ -611,24 +617,28 @@ int main(int, char**)
 	while (!glfwWindowShouldClose(mainWindow))
 	{
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glfwPollEvents();
 
 		ImGui_ImplOpenGL2_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		DrawText(5, 15, demoStrings[demoIndex]);
-		DrawText(5, 45, "Keys: 1-9 Demos, Space to Launch the Bomb");
+		// Globally position text
+		ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f));
+		ImGui::Begin("Overlay", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
+		ImGui::End();
+
+		DrawText(5, 5, demoStrings[demoIndex]);
+		DrawText(5, 35, "Keys: 1-9 Demos, Space to Launch the Bomb");
 
 		char buffer[64];
 		sprintf(buffer, "(A)ccumulation %s", World::accumulateImpulses ? "ON" : "OFF");
-		DrawText(5, 75, buffer);
+		DrawText(5, 65, buffer);
 
 		sprintf(buffer, "(P)osition Correction %s", World::positionCorrection ? "ON" : "OFF");
-		DrawText(5, 105, buffer);
+		DrawText(5, 95, buffer);
 
 		sprintf(buffer, "(W)arm Starting %s", World::warmStarting ? "ON" : "OFF");
-		DrawText(5, 135, buffer);
+		DrawText(5, 125, buffer);
 
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
@@ -642,8 +652,26 @@ int main(int, char**)
 		for (int i = 0; i < numJoints; ++i)
 			DrawJoint(joints + i);
 
+		glPointSize(4.0f);
+		glColor3f(1.0f, 0.0f, 0.0f);
+		glBegin(GL_POINTS);
+		std::map<ArbiterKey, Arbiter>::const_iterator iter;
+		for (iter = world.arbiters.begin(); iter != world.arbiters.end(); ++iter)
+		{
+			const Arbiter& arbiter = iter->second;
+			for (int i = 0; i < arbiter.numContacts; ++i)
+			{
+				Vec2 p = arbiter.contacts[i].position;
+				glVertex2f(p.x, p.y);
+			}
+		}
+		glEnd();
+		glPointSize(1.0f);
+
 		ImGui::Render();
 		ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+
+		glfwPollEvents();
 		glfwSwapBuffers(mainWindow);
 	}
 
