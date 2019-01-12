@@ -1,12 +1,15 @@
 language: cpp
+compiler: clang
 
-compiler:
-  - gcc
-  - clang
-
-before_script:
-  - mkdir build
-  - cd build
-  - cmake ..
-
-script: make
+matrix:
+  include:
+    - os: linux
+      env:
+    - os: osx
+      env:
+          
+script:
+    - mkdir build
+    - cd build
+    - cmake ..
+    - cmake --build .
