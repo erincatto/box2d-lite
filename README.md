@@ -1,4 +1,4 @@
-# Box2d-Lite
+# Box2D-Lite
 A small 2D physics engine. Developed to help people learn how game physics works.
 
 # Build Status

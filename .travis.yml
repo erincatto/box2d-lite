@@ -1,6 +1,9 @@
 language: cpp
 compiler: clang
 
+branches:
+    only:
+        - master
 matrix:
   include:
     - os: linux
