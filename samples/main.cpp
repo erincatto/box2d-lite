@@ -16,7 +16,6 @@
 #include "examples/imgui_impl_glfw.h"
 #include "examples/imgui_impl_opengl2.h"
 
-#define GLFW_INCLUDE_GLU
 #include "GLFW/glfw3.h"
 
 #include "box2d-lite/World.h"
@@ -43,6 +42,8 @@ namespace
 
 	int width = 1280;
 	int height = 720;
+	float zoom = 10.0f;
+	float pan_y = 8.0f;
 
 	World world(gravity, iterations);
 }
@@ -567,7 +568,18 @@ static void Reshape(GLFWwindow*, int w, int h)
 	glViewport(0, 0, width, height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(45.0, (float)width/(float)height, 0.1, 100.0);
+
+	float aspect = float(width) / float(height);
+	if (width >= height)
+	{
+		// aspect >= 1, set the height from -1 to 1, with larger width
+		glOrtho(-zoom * aspect, zoom * aspect, -zoom + pan_y, zoom + pan_y, -1.0, 1.0);
+	}
+	else
+	{
+		// aspect < 1, set the width to -1 to 1, with larger height
+		glOrtho(-zoom, zoom, -zoom / aspect + pan_y, zoom / aspect + pan_y, -1.0, 1.0);
+	}
 }
 
 int main(int, char**)
@@ -609,8 +621,17 @@ int main(int, char**)
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	
-	// TODO_ERIN glOrtho
-	gluPerspective(45.0, (float)width / (float)height, 0.1, 100.0);
+	float aspect = float(width) / float(height);
+	if (width >= height)
+	{
+		// aspect >= 1, set the height from -1 to 1, with larger width
+		glOrtho(-zoom * aspect, zoom * aspect, -zoom + pan_y, zoom + pan_y, -1.0, 1.0);
+	}
+	else
+	{
+		// aspect < 1, set the width to -1 to 1, with larger height
+		glOrtho(-zoom, zoom, -zoom / aspect + pan_y, zoom / aspect + pan_y, -1.0, 1.0);
+	}
 
 	InitDemo(0);
 
@@ -642,7 +663,6 @@ int main(int, char**)
 
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		glTranslatef(0.0f, -7.0f, -25.0f);
 
 		world.Step(timeStep);
 

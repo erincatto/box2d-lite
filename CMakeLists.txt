@@ -47,7 +47,7 @@ if (BOX2D_BUILD_SAMPLES)
 	# box2d-lite samples
 	add_executable(samples samples/main.cpp)
 	target_include_directories(samples PUBLIC imgui ${OPENGL_INCLUDE_DIR})
-	target_link_libraries(samples PUBLIC box2d-lite glfw imgui ${OPENGL_LIBRARIES} ${OPENGL_glu_LIBRARY})
+	target_link_libraries(samples PUBLIC box2d-lite glfw imgui ${OPENGL_LIBRARIES})
 
 	# default startup project for Visual Studio
 	if (MSVC)
