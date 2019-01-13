@@ -4,6 +4,13 @@ compiler: clang
 branches:
     only:
         - master
+
+addons:
+  apt:
+    packages:
+      - cmake
+      - libxrandr-dev
+
 matrix:
   include:
     - os: linux
