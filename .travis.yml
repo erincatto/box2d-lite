@@ -10,7 +10,8 @@ addons:
     packages:
       - libxrandr-dev
       - libxinerama-dev
-      
+      - libxcursor-dev
+            
 matrix:
   include:
     - os: linux
