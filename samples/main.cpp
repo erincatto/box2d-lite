@@ -53,7 +53,7 @@ static void glfwErrorCallback(int error, const char* description)
 	printf("GLFW error %d: %s\n", error, description);
 }
 
-static void DrawText(int x, int y, char *string)
+static void DrawText(int x, int y, const char* string)
 {
 	ImVec2 p;
 	p.x = float(x);
@@ -494,7 +494,7 @@ static void Demo9(Body* b, Joint* j)
 }
 
 void (*demos[])(Body* b, Joint* j) = {Demo1, Demo2, Demo3, Demo4, Demo5, Demo6, Demo7, Demo8, Demo9};
-char* demoStrings[] = {
+const char* demoStrings[] = {
 	"Demo 1: A Single Box",
 	"Demo 2: Simple Pendulum",
 	"Demo 3: Varying Friction Coefficients",
