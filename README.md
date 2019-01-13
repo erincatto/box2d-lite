@@ -3,7 +3,9 @@ A small 2D physics engine. Developed for the [2006 GDC Physics Tutorial](docs/GD
 
 # Cloning
 Box2D-Lite samples use [GLFW](https://www.glfw.org/) and [dear imgui](https://github.com/ocornut/imgui) as git submodules. Therefor, I recommend cloning box2d-lite using the following command:
-> git clone --recursive https://github.com/erincatto/box2d-lite.git
+```bash
+git clone --recursive https://github.com/erincatto/box2d-lite.git
+```
 
 # Building
 - Install [CMake](https://cmake.org/)
