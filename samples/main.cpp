@@ -60,7 +60,7 @@ static void DrawText(int x, int y, const char* string)
 	p.y = float(y);
 	ImGui::Begin("Overlay", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
 	ImGui::SetCursorPos(p);
-	ImGui::TextColored(ImColor(230, 153, 153, 255), string);
+	ImGui::TextColored(ImColor(230, 153, 153, 255), "%s", string);
 	ImGui::End();
 }
 
