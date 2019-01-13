@@ -10,7 +10,7 @@
 */
 
 #define _CRT_SECURE_NO_WARNINGS
-#include <string.h>
+#include <stdio.h>
 
 #include "imgui/imgui.h"
 #include "imgui_impl_glfw.h"
