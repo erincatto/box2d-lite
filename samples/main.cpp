@@ -12,9 +12,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <string.h>
 
-#include "imgui.h"
-#include "examples/imgui_impl_glfw.h"
-#include "examples/imgui_impl_opengl2.h"
+#include "imgui/imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl2.h"
 
 #include "GLFW/glfw3.h"
 

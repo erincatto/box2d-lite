@@ -18,7 +18,7 @@ if (BOX2D_BUILD_SAMPLES)
 	option(GLFW_INSTALL "" OFF)
 	option(GLFW_VULKAN_STATIC "" OFF)
 	if (MSVC)
-	    option(USE_MSVC_RUNTIME_LIBRARY_DLL "" OFF)
+	    option(USE_MSVC_RUNTIME_LIBRARY_DLL "" ON)
 	endif()
 
 	add_subdirectory(extern/glfw)
@@ -27,9 +27,7 @@ if (BOX2D_BUILD_SAMPLES)
 	set(IMGUI_SOURCE_FILES
 		extern/imgui/imgui.cpp
 		extern/imgui/imgui_draw.cpp
-		extern/imgui/imgui_widgets.cpp
-		extern/imgui/examples/imgui_impl_glfw.cpp
-		extern/imgui/examples/imgui_impl_opengl2.cpp)
+		extern/imgui/imgui_widgets.cpp)
 
 	set(IMGUI_HEADER_FILES
 		extern/imgui/imconfig.h
@@ -37,16 +35,23 @@ if (BOX2D_BUILD_SAMPLES)
 		extern/imgui/imgui_internal.h
 		extern/imgui/imstb_rectpack.h
 		extern/imgui/imstb_textedit.h
-		extern/imgui/imstb_truetype.h
-		extern/imgui/examples/imgui_impl_glfw.h
-		extern/imgui/examples/imgui_impl_opengl2.h)
+		extern/imgui/imstb_truetype.h)
 
 	add_library(imgui STATIC ${IMGUI_SOURCE_FILES} ${IMGUI_HEADER_FILES})
-	target_include_directories(imgui PUBLIC extern/imgui ${OPENGL_INCLUDE_DIR})
+	target_include_directories(imgui PUBLIC extern)
 
 	# box2d-lite samples
-	add_executable(samples samples/main.cpp)
-	target_include_directories(samples PUBLIC imgui ${OPENGL_INCLUDE_DIR})
+	set (SAMPLE_SOURCE_FILES
+		samples/imgui_impl_glfw.cpp
+		samples/imgui_impl_opengl2.cpp
+		samples/main.cpp)
+
+	set (SAMPLE_HEADER_FILES
+		samples/imgui_impl_glfw.h
+		samples/imgui_impl_opengl2.h)
+
+	add_executable(samples ${SAMPLE_SOURCE_FILES} ${SAMPLE_HEADER_FILES})
+	target_include_directories(samples PUBLIC ${OPENGL_INCLUDE_DIR})
 	target_link_libraries(samples PUBLIC box2d-lite glfw imgui ${OPENGL_LIBRARIES})
 
 	# default startup project for Visual Studio
