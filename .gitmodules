@@ -1,8 +1,8 @@
 [submodule "extern/imgui"]
 	path = extern/imgui
-	url = git@github.com:ocornut/imgui.git
+	url = https://github.com/ocornut/imgui.git
 	shallow = true
 [submodule "extern/glfw"]
 	path = extern/glfw
-	url = git@github.com:glfw/glfw.git
+	url = https://github.com/glfw/glfw.git
 	shallow = true
