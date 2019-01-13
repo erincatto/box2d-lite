@@ -1,5 +1,5 @@
 # Box2D-Lite
-A small 2D physics engine. Developed for the [2006 GDC Physics Tutorial](docs/GDC2006_Catto_Erin_PhysicsTutorial.pdf).
+A small 2D physics engine. Developed for the [2006 GDC Physics Tutorial](docs/GDC2006_Catto_Erin_PhysicsTutorial.pdf). It is the original version of the larger [Box2D](https://box2d.org) library.
 
 # Cloning
 Box2D-Lite samples use [GLFW](https://www.glfw.org/) and [dear imgui](https://github.com/ocornut/imgui) as git submodules. Therefor, I recommend cloning box2d-lite using the following command:
