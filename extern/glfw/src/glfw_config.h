@@ -42,6 +42,4 @@
 	#define _GLFW_COCOA
 #else
 	#define _GLFW_X11
-#else
-#   error "Unknown compiler"
 #endif
