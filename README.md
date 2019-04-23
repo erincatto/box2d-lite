@@ -8,5 +8,8 @@ Box2D-Lite is a small 2D physics engine. It was developed for the [2006 GDC Phys
 - Otherwise: run `build.sh` from a bash shell
 - Results are in the build sub-folder
 
+# Example usage
+Navigate to `build\samples\Debug\` and run `samples.exe` to see some examples working.
+
 # Build Status
 [![Build Status](https://travis-ci.org/erincatto/box2d-lite.svg?branch=master)](https://travis-ci.org/erincatto/box2d-lite)
