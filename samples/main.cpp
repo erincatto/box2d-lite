@@ -12,15 +12,21 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 
-#include "imgui/imgui.h"
+#include "imgui.h"
 #include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl2.h"
+#include "imgui_impl_opengl3.h"
+
+#include "GL/glew.h"
 
 #include "GLFW/glfw3.h"
 
 #include "box2d-lite/World.h"
 #include "box2d-lite/Body.h"
 #include "box2d-lite/Joint.h"
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 
 namespace
 {
@@ -45,12 +51,57 @@ namespace
 	float zoom = 10.0f;
 	float pan_y = 8.0f;
 
+	GLuint program;
+	GLfloat projection[16];
+	GLint a_position_location, u_projection_location, u_color_location;
+
 	World world(gravity, iterations);
 }
 
 static void glfwErrorCallback(int error, const char* description)
 {
 	printf("GLFW error %d: %s\n", error, description);
+}
+
+static GLuint LoadShader(GLenum type, const char* shaderSrc)
+{
+	GLuint shader;
+	GLint compiled;
+	shader = glCreateShader(type);
+	if (shader == 0)
+	{
+		return 0;
+	}
+	glShaderSource(shader, 1, &shaderSrc, NULL);
+	glCompileShader(shader);
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+	if (!compiled)
+	{
+		GLint infoLen = 0;
+		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLen);
+		if (infoLen > 1)
+		{
+			char* infoLog = (char*)malloc(sizeof(char) * infoLen);
+			glGetShaderInfoLog(shader, infoLen, NULL, infoLog);
+			fprintf(stderr, "Error compilling shader:\n%s\n", infoLog);
+			free(infoLog);
+		}
+		glDeleteShader(shader);
+		return 0;
+	}
+	return shader;
+}
+
+static void Ortho(GLfloat* projection, GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat near, GLfloat far)
+{
+	memset(projection, 0, sizeof(GLfloat)*16);
+	projection[0]  = 2.0f / (right - left);
+	projection[5]  = 2.0f / (top - bottom);
+	projection[10] = -2.0f / (far - near);
+	projection[12]  = -(right + left)/(right - left);
+	projection[13]  = -(top + bottom)/(top - bottom);
+	projection[14]  = -(far + near)/(far - near);
+	projection[15] = 1.0f;
 }
 
 static void DrawText(int x, int y, const char* string)
@@ -70,22 +121,19 @@ static void DrawBody(Body* body)
 	Vec2 x = body->position;
 	Vec2 h = 0.5f * body->width;
 
-	Vec2 v1 = x + R * Vec2(-h.x, -h.y);
-	Vec2 v2 = x + R * Vec2( h.x, -h.y);
-	Vec2 v3 = x + R * Vec2( h.x,  h.y);
-	Vec2 v4 = x + R * Vec2(-h.x,  h.y);
+	Vec2 positions[4], &v1 = positions[0], &v2 = positions[1], &v3 = positions[2], &v4 = positions[3];
+
+	v1 = x + R * Vec2(-h.x, -h.y);
+	v2 = x + R * Vec2( h.x, -h.y);
+	v3 = x + R * Vec2( h.x,  h.y);
+	v4 = x + R * Vec2(-h.x,  h.y);
 
 	if (body == bomb)
-		glColor3f(0.4f, 0.9f, 0.4f);
+		glUniform3f(u_color_location, 0.4f, 0.9f, 0.4f);
 	else
-		glColor3f(0.8f, 0.8f, 0.9f);
-
-	glBegin(GL_LINE_LOOP);
-	glVertex2f(v1.x, v1.y);
-	glVertex2f(v2.x, v2.y);
-	glVertex2f(v3.x, v3.y);
-	glVertex2f(v4.x, v4.y);
-	glEnd();
+		glUniform3f(u_color_location, 0.8f, 0.8f, 0.9f);
+	glVertexAttribPointer(a_position_location, 2, GL_FLOAT, GL_FALSE, 0, positions);
+	glDrawArrays(GL_LINE_LOOP, 0, 4);
 }
 
 static void DrawJoint(Joint* joint)
@@ -96,19 +144,17 @@ static void DrawJoint(Joint* joint)
 	Mat22 R1(b1->rotation);
 	Mat22 R2(b2->rotation);
 
-	Vec2 x1 = b1->position;
-	Vec2 p1 = x1 + R1 * joint->localAnchor1;
+	Vec2 positions[4], &x1 = positions[0], &p1 = positions[1], &x2 = positions[2], &p2 = positions[3];
 
-	Vec2 x2 = b2->position;
-	Vec2 p2 = x2 + R2 * joint->localAnchor2;
+	x1 = b1->position;
+	p1 = x1 + R1 * joint->localAnchor1;
 
-	glColor3f(0.5f, 0.5f, 0.8f);
-	glBegin(GL_LINES);
-	glVertex2f(x1.x, x1.y);
-	glVertex2f(p1.x, p1.y);
-	glVertex2f(x2.x, x2.y);
-	glVertex2f(p2.x, p2.y);
-	glEnd();
+	x2 = b2->position;
+	p2 = x2 + R2 * joint->localAnchor2;
+
+	glUniform3f(u_color_location, 0.5f, 0.5f, 0.8f);
+	glVertexAttribPointer(a_position_location, 2, GL_FLOAT, GL_FALSE, 0, positions);
+	glDrawArrays(GL_LINES, 0, 4);
 }
 
 static void LaunchBomb()
@@ -566,20 +612,79 @@ static void Reshape(GLFWwindow*, int w, int h)
 	height = h > 0 ? h : 1;
 
 	glViewport(0, 0, width, height);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
 
 	float aspect = float(width) / float(height);
 	if (width >= height)
 	{
 		// aspect >= 1, set the height from -1 to 1, with larger width
-		glOrtho(-zoom * aspect, zoom * aspect, -zoom + pan_y, zoom + pan_y, -1.0, 1.0);
+		Ortho(projection, -zoom * aspect, zoom * aspect, -zoom + pan_y, zoom + pan_y, -1.0, 1.0);
 	}
 	else
 	{
 		// aspect < 1, set the width to -1 to 1, with larger height
-		glOrtho(-zoom, zoom, -zoom / aspect + pan_y, zoom / aspect + pan_y, -1.0, 1.0);
+		Ortho(projection, -zoom, zoom, -zoom / aspect + pan_y, zoom / aspect + pan_y, -1.0, 1.0);
 	}
+}
+
+void frame()
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+
+	// Globally position text
+	ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f));
+	ImGui::Begin("Overlay", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
+	ImGui::End();
+
+	DrawText(5, 5, demoStrings[demoIndex]);
+	DrawText(5, 35, "Keys: 1-9 Demos, Space to Launch the Bomb");
+
+	char buffer[64];
+	sprintf(buffer, "(A)ccumulation %s", World::accumulateImpulses ? "ON" : "OFF");
+	DrawText(5, 65, buffer);
+
+	sprintf(buffer, "(P)osition Correction %s", World::positionCorrection ? "ON" : "OFF");
+	DrawText(5, 95, buffer);
+
+	sprintf(buffer, "(W)arm Starting %s", World::warmStarting ? "ON" : "OFF");
+	DrawText(5, 125, buffer);
+
+	world.Step(timeStep);
+
+	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+	glEnableVertexAttribArray(a_position_location);
+	glUseProgram(program);
+	glUniformMatrix4fv(u_projection_location, 1, GL_FALSE, projection);
+
+	for (int i = 0; i < numBodies; ++i)
+		DrawBody(bodies + i);
+
+	for (int i = 0; i < numJoints; ++i)
+		DrawJoint(joints + i);
+
+	glUniform3f(u_color_location, 1.0f, 0.0f, 0.0f);
+	std::map<ArbiterKey, Arbiter>::const_iterator iter;
+	std::vector<Vec2> contacts;
+	contacts.reserve(world.arbiters.size() * Arbiter::MAX_POINTS);
+	for (iter = world.arbiters.begin(); iter != world.arbiters.end(); ++iter)
+	{
+		const Arbiter& arbiter = iter->second;
+		for (int i = 0; i < arbiter.numContacts; ++i)
+		{
+			contacts.push_back(arbiter.contacts[i].position);
+		}
+	}
+	glVertexAttribPointer(a_position_location, 2, GL_FLOAT, GL_FALSE, 0, contacts.data());
+	glDrawArrays(GL_POINTS, 0, contacts.size());
+
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+	glfwPollEvents();
+	glfwSwapBuffers(mainWindow);
 }
 
 int main(int, char**)
@@ -592,6 +697,8 @@ int main(int, char**)
 		return -1;
 	}
 
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 	mainWindow = glfwCreateWindow(width, height, "box2d-lite", NULL, NULL);
 	if (mainWindow == NULL)
 	{
@@ -601,100 +708,89 @@ int main(int, char**)
 	}
 
 	glfwMakeContextCurrent(mainWindow);
+
+	fprintf(stdout, "Version OpenGL: %s\n", glGetString(GL_VERSION));
+	fprintf(stdout, "Version GLSL: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+	GLenum err = glewInit();
+	if (err != GLEW_OK)
+	{
+		fprintf(stderr, "GLEW error: %s\n", glewGetErrorString(err));
+		return -1;
+	}
+	fprintf(stdout, "Version GLEW: %s\n", glewGetString(GLEW_VERSION));
+
+	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+
+	const char vertexShaderSrc[] =
+	"attribute vec2 a_position;                                 \n"
+	"uniform mat4 u_projection;                                 \n"
+	"void main()                                                \n"
+	"{                                                          \n"
+	"   gl_PointSize = 4.0;                                     \n"
+	"   gl_Position = u_projection * vec4(a_position, 0.0, 1.0);\n"
+	"}";
+
+	const char fragmentShaderSrc[] =
+	"precision mediump float;             \n"
+	"uniform vec3 u_color;                \n"
+	"void main()                          \n"
+	"{                                    \n"
+	"   gl_FragColor = vec4(u_color, 1.0);\n"
+	"}";
+
+	GLuint shaders[2];
+	shaders[0] = LoadShader(GL_VERTEX_SHADER, vertexShaderSrc);
+	shaders[1] = LoadShader(GL_FRAGMENT_SHADER, fragmentShaderSrc);
+
+	program = glCreateProgram();
+	glAttachShader(program, shaders[0]);
+	glAttachShader(program, shaders[1]);
+
+	glLinkProgram(program);
+	GLint linked;
+	glGetProgramiv(program, GL_LINK_STATUS, &linked);
+	if (!linked)
+	{
+		glDeleteProgram(program);
+		return -1;
+	}
+	a_position_location = glGetAttribLocation(program, "a_position");
+	u_projection_location = glGetUniformLocation(program, "u_projection");
+	u_color_location = glGetUniformLocation(program, "u_color");
+
 	glfwSwapInterval(1);
 	glfwSetWindowSizeCallback(mainWindow, Reshape);
 	glfwSetKeyCallback(mainWindow, Keyboard);
 
-	float xscale, yscale;
-	glfwGetWindowContentScale(mainWindow, &xscale, &yscale);
-	float uiScale = xscale;
-
 	IMGUI_CHECKVERSION();
+	fprintf(stdout, "Version ImGui: %s\n", IMGUI_VERSION);
 	ImGui::CreateContext();
 	ImGui::StyleColorsClassic();
 	ImGui_ImplGlfw_InitForOpenGL(mainWindow, true);
-	ImGui_ImplOpenGL2_Init();
+	ImGui_ImplOpenGL3_Init();
 	ImGuiIO& io = ImGui::GetIO();
-	io.FontGlobalScale = uiScale;
 
-	glViewport(0, 0, width, height);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	
-	float aspect = float(width) / float(height);
-	if (width >= height)
-	{
-		// aspect >= 1, set the height from -1 to 1, with larger width
-		glOrtho(-zoom * aspect, zoom * aspect, -zoom + pan_y, zoom + pan_y, -1.0, 1.0);
-	}
-	else
-	{
-		// aspect < 1, set the width to -1 to 1, with larger height
-		glOrtho(-zoom, zoom, -zoom / aspect + pan_y, zoom / aspect + pan_y, -1.0, 1.0);
-	}
+#ifndef __EMSCRIPTEN__
+	float xscale, yscale;
+	glfwGetWindowContentScale(mainWindow, &xscale, &yscale);
+	float uiScale = xscale;
+	io.FontGlobalScale = uiScale;
+#endif
+
+	Reshape(mainWindow, width, height);
 
 	InitDemo(0);
 
+#ifdef __EMSCRIPTEN__
+	emscripten_set_main_loop(frame, 60, 1);
+#else
 	while (!glfwWindowShouldClose(mainWindow))
 	{
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		ImGui_ImplOpenGL2_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
-
-		// Globally position text
-		ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f));
-		ImGui::Begin("Overlay", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
-		ImGui::End();
-
-		DrawText(5, 5, demoStrings[demoIndex]);
-		DrawText(5, 35, "Keys: 1-9 Demos, Space to Launch the Bomb");
-
-		char buffer[64];
-		sprintf(buffer, "(A)ccumulation %s", World::accumulateImpulses ? "ON" : "OFF");
-		DrawText(5, 65, buffer);
-
-		sprintf(buffer, "(P)osition Correction %s", World::positionCorrection ? "ON" : "OFF");
-		DrawText(5, 95, buffer);
-
-		sprintf(buffer, "(W)arm Starting %s", World::warmStarting ? "ON" : "OFF");
-		DrawText(5, 125, buffer);
-
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-
-		world.Step(timeStep);
-
-		for (int i = 0; i < numBodies; ++i)
-			DrawBody(bodies + i);
-
-		for (int i = 0; i < numJoints; ++i)
-			DrawJoint(joints + i);
-
-		glPointSize(4.0f);
-		glColor3f(1.0f, 0.0f, 0.0f);
-		glBegin(GL_POINTS);
-		std::map<ArbiterKey, Arbiter>::const_iterator iter;
-		for (iter = world.arbiters.begin(); iter != world.arbiters.end(); ++iter)
-		{
-			const Arbiter& arbiter = iter->second;
-			for (int i = 0; i < arbiter.numContacts; ++i)
-			{
-				Vec2 p = arbiter.contacts[i].position;
-				glVertex2f(p.x, p.y);
-			}
-		}
-		glEnd();
-		glPointSize(1.0f);
-
-		ImGui::Render();
-		ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
-
-		glfwPollEvents();
-		glfwSwapBuffers(mainWindow);
+		frame();
 	}
-
 	glfwTerminate();
+#endif
+
 	return 0;
 }
