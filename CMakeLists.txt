@@ -8,8 +8,7 @@ option(BOX2D_BUILD_SAMPLES "Build the box2d-lite sample program" ON)
 
 if (BOX2D_BUILD_SAMPLES)
 
-	find_package(OpenGL REQUIRED)
-
+	add_subdirectory(extern/glad)
 	add_subdirectory(extern/glfw)
 	add_subdirectory(extern/imgui)
 	add_subdirectory(samples)
