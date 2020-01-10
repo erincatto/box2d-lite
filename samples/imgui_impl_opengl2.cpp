@@ -42,10 +42,13 @@
 #if defined(_WIN32) && !defined(WINGDIAPI)
 #define WINGDIAPI __declspec(dllimport)     // Some Windows OpenGL headers need this
 #endif
+
 #if defined(__APPLE__)
-#include <OpenGL/gl.h>
+// #include <OpenGL/gl.h>
+#include "glad/glad.h"
 #else
-#include <GL/gl.h>
+// #include <GL/gl.h>
+#include "glad/glad.h"
 #endif
 
 // OpenGL Data

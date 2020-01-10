@@ -16,6 +16,8 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl2.h"
 
+#define GLFW_INCLUDE_NONE
+#include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
 #include "box2d-lite/World.h"
@@ -601,6 +603,16 @@ int main(int, char**)
 	}
 
 	glfwMakeContextCurrent(mainWindow);
+
+	// Load OpenGL functions using glad
+	int gladStatus = gladLoadGL();
+	if (gladStatus == 0)
+	{
+		fprintf(stderr, "Failed to load OpenGL.\n");
+		glfwTerminate();
+		return -1;
+	}
+
 	glfwSwapInterval(1);
 	glfwSetWindowSizeCallback(mainWindow, Reshape);
 	glfwSetKeyCallback(mainWindow, Keyboard);
